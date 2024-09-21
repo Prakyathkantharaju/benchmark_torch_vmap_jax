@@ -31,24 +31,26 @@ def scaled_dot_product_attention_torch(q, k, v):
 @functools.partial(jax.jit, static_argnums=(2,))
 @benchmark(100)
 def jax_attention_map(x, qkv_projection_params, qkv_projection):
-    qkv = qkv_projection.apply(qkv_projection_params, x)
-    q, k, v = jnp.split(qkv, 3, axis=-1)
-    return jax.vmap(scaled_dot_product_attention_jax, in_axes=(0, 0, 0))(q, k, v)
-
+    for i in range(10):
+        qkv = qkv_projection.apply(qkv_projection_params, x)
+        q, k, v = jnp.split(qkv, 3, axis=-1)
+        jax.vmap(scaled_dot_product_attention_jax, in_axes=(0, 0, 0))(q, k, v)
+    
 
 
 # @benchmark(100)
-# def jax_attention_map(x, qkv_projection_params, qkv_projection):
-#     qkv = qkv_projection.apply(qkv_projection_params, x)
-
-#     q, k, v = jnp.split(qkv, 3, axis=-1)
-#     return jax.vmap(scaled_dot_product_attention_jax)(q, k, v)
+# def torch_attention_map(x, qkv_projection):
+#     for i in range(10):
+#         qkv = qkv_projection(x)
+#         q, k, v = torch.split(qkv, [512, 512, 512], dim=-1)
+#         scaled_dot_product_attention_torch(q, k, v)
 
 @benchmark(100)
 def torch_attention_map(x, qkv_projection):
-    qkv = qkv_projection(x)
-    q, k, v = torch.split(qkv, [512, 512, 512], dim=-1)
-    return scaled_dot_product_attention_torch(q, k, v)
+    for i in range(10):
+        qkv = qkv_projection(x)
+        q, k, v = torch.split(qkv, [512, 512, 512], dim=-1)
+        torch.func.vmap(scaled_dot_product_attention_torch, in_dims=(0, 0, 0))(q, k, v)
 
 
 
@@ -64,8 +66,8 @@ if __name__ == "__main__":
     qkv_projections_jax_params = qkv_projection_jax.init(random_key, jax.random.normal(random_key, shape=(3 * 512)))
 
     # initial the input
-    x = torch.randn(1, 10, 512 * 3)
-    x_jax = jax.random.normal(random_key, shape=(1, 10, 512 * 3))
+    x = torch.randn(10, 10, 512 * 3)
+    x_jax = jax.random.normal(random_key, shape=(10, 10, 512 * 3))
 
     # get the attention map
     _, mean_time_jax, std_dev_time_jax, mean_memory_jax, std_dev_memory_jax  = jax_attention_map(x_jax, qkv_projections_jax_params, qkv_projection_jax)
