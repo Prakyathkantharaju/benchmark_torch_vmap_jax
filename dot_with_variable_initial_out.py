@@ -1,6 +1,9 @@
 import torch.func as func
 import torch
 from utils import benchmark
+import seaborn as sns
+import matplotlib.pyplot as plt
+import pandas as pd
 
 try: 
     import jax
@@ -12,6 +15,7 @@ except ImportError:
 
 
 
+# NOTE: the profiler will only produce result it will also results in profiler information.
 NUMBER_OF_TESTS = 1000
 n = 10000
 m = 100
@@ -72,12 +76,6 @@ if __name__ == "__main__":
     b = torch.randn(m, n)
     torch_result, torch_mean, torch_std, torch_memory, torch_memory_std = benchmark_torch(a, b)
     torch_vmap_result, torch_vmap_mean, torch_vmap_std, torch_vmap_memory, torch_vmap_memory_std = benchmark_torch_vmap(a, b)
-
-    import seaborn as sns
-    import matplotlib.pyplot as plt
-    import pandas as p
-    import matplotlib
-    matplotlib.use('Qt5Agg')  # Try Qt backend instead
 
 
     # Create a DataFrame from the benchmark results

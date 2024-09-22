@@ -1,6 +1,6 @@
 import time
-import statistics
 from functools import wraps
+import numpy as np
 import psutil
 import os
 import gc
@@ -14,6 +14,7 @@ def benchmark(runs=NUMBER_OF_TESTS):
         def wrapper(*args, **kwargs):
             times = []
             memory_usages = []
+            
             process = psutil.Process(os.getpid())
             
             for _ in range(runs):
@@ -25,19 +26,18 @@ def benchmark(runs=NUMBER_OF_TESTS):
                 result = func(*args, **kwargs)
                 end = time.perf_counter()
                 
-                # Peak memory usage
-                mem_peak = process.memory_info().rss
+                # Memory usage after
+                mem_after = process.memory_info().rss
+                mem_used = mem_after - mem_before
                 
                 times.append(end - start)
-                memory_usages.append(max(0, mem_peak - mem_before))  # Ensure non-negative
+                memory_usages.append(mem_used)
+                gc.collect()
             
-            # Clear garbage collection after all runs
-            gc.collect()
-            
-            mean_time = statistics.mean(times)
-            std_dev_time = statistics.stdev(times)
-            mean_memory = statistics.mean(memory_usages)
-            std_dev_memory = statistics.stdev(memory_usages)
+            mean_time = np.mean(times)
+            std_dev_time = np.std(times)
+            mean_memory = np.mean(memory_usages)
+            std_dev_memory = np.std(memory_usages)
             
             print(f"{func.__name__}:")
             print(f"  Mean time: {mean_time:.6f} seconds")
